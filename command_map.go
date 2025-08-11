@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"pokedexcli/internal/pokecache"
 )
 
 type locationAreaResponse struct {
@@ -15,19 +16,34 @@ type locationAreaResponse struct {
 	Previous *string `json:"previous"`
 }
 
+func getOrFetchURL(cache *pokecache.Cache, url string) ([]byte, error) {
+	if data, ok := cache.Get(url); ok {
+		return data, nil
+	}
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	cache.Add(url, body)
+	return body, nil
+}
+
 func commandMap(cfg *config, args ...string) error {
 	url := "https://pokeapi.co/api/v2/location-area?limit=20"
 	if cfg.nextLocationsURL != nil && *cfg.nextLocationsURL != "" {
 		url = *cfg.nextLocationsURL
 	}
-	resp, err := http.Get(url)
+	if cfg.cache == nil {
+		return fmt.Errorf("cache not initialized")
+	}
+	body, err := getOrFetchURL(cfg.cache, url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch location areas: %w", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
 	}
 	var data locationAreaResponse
 	if err := json.Unmarshal(body, &data); err != nil {
@@ -46,15 +62,13 @@ func commandMapb(cfg *config, args ...string) error {
 		fmt.Println("you're on the first page")
 		return nil
 	}
+	if cfg.cache == nil {
+		return fmt.Errorf("cache not initialized")
+	}
 	url := *cfg.prevLocationsURL
-	resp, err := http.Get(url)
+	body, err := getOrFetchURL(cfg.cache, url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch location areas: %w", err)
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response: %w", err)
 	}
 	var data locationAreaResponse
 	if err := json.Unmarshal(body, &data); err != nil {

@@ -1,8 +1,13 @@
 package main
 
+import (
+	"pokedexcli/internal/pokecache"
+)
+
 type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
+	cache             *pokecache.Cache
 }
 
 type cliCommand struct {

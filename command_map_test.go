@@ -7,6 +7,9 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
+
+	"pokedexcli/internal/pokecache"
 )
 
 type mockRoundTripper struct {
@@ -31,7 +34,9 @@ func TestCommandMap_PrintsLocationAreas(t *testing.T) {
 	http.DefaultTransport = &mockRoundTripper{responseBody: json}
 	defer func() { http.DefaultTransport = oldTransport }()
 
-	cfg := &config{}
+	cfg := &config{
+		cache: pokecache.NewCache(time.Second), // or any short duration
+	}
 
 	// Capture stdout
 	old := os.Stdout
@@ -52,5 +57,66 @@ func TestCommandMap_PrintsLocationAreas(t *testing.T) {
 
 	if !strings.Contains(output, "area-1") || !strings.Contains(output, "area-2") {
 		t.Errorf("expected output to contain area names, got: %s", output)
+	}
+}
+
+func TestCommandMapb_PrintsPreviousPage(t *testing.T) {
+	json := `{"results":[{"name":"prev-area-1"},{"name":"prev-area-2"}],"next":null,"previous":null}`
+	oldTransport := http.DefaultTransport
+	http.DefaultTransport = &mockRoundTripper{responseBody: json}
+	defer func() { http.DefaultTransport = oldTransport }()
+
+	prevURL := "http://example.com/prev"
+	cfg := &config{
+		cache:            pokecache.NewCache(time.Second),
+		prevLocationsURL: &prevURL,
+	}
+	cfg.cache.Add(prevURL, []byte(json)) // Pre-populate cache for prevURL
+
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := commandMapb(cfg)
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	output := buf.String()
+
+	if !strings.Contains(output, "prev-area-1") || !strings.Contains(output, "prev-area-2") {
+		t.Errorf("expected output to contain previous area names, got: %s", output)
+	}
+}
+
+func TestCommandMapb_FirstPageMessage(t *testing.T) {
+	cfg := &config{
+		cache:            pokecache.NewCache(time.Second),
+		prevLocationsURL: nil,
+	}
+
+	old := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	err := commandMapb(cfg)
+	w.Close()
+	os.Stdout = old
+
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var buf bytes.Buffer
+	buf.ReadFrom(r)
+	output := buf.String()
+
+	if !strings.Contains(output, "you're on the first page") {
+		t.Errorf("expected output to contain 'you're on the first page', got: %s", output)
 	}
 }
