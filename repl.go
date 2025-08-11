@@ -1,13 +1,9 @@
 package main
 
-import (
-	"pokedexcli/internal/pokecache"
-)
-
 type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
-	cache             *pokecache.Cache
+	cache            CacheInterface
 }
 
 type cliCommand struct {
@@ -37,6 +33,11 @@ func getCommands() map[string]cliCommand {
 			name:        "mapb",
 			description: "Displays the previous 20 location areas in the Pokemon world",
 			callback:    commandMapb,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Explore a location area and list the Pokemon found there",
+			callback:    commandExplore,
 		},
 	}
 }

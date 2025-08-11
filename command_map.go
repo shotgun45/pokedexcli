@@ -41,7 +41,11 @@ func commandMap(cfg *config, args ...string) error {
 	if cfg.cache == nil {
 		return fmt.Errorf("cache not initialized")
 	}
-	body, err := getOrFetchURL(cfg.cache, url)
+	cache, ok := cfg.cache.(*pokecache.Cache)
+	if !ok {
+		return fmt.Errorf("cache is not of type *pokecache.Cache")
+	}
+	body, err := getOrFetchURL(cache, url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch location areas: %w", err)
 	}
@@ -66,7 +70,11 @@ func commandMapb(cfg *config, args ...string) error {
 		return fmt.Errorf("cache not initialized")
 	}
 	url := *cfg.prevLocationsURL
-	body, err := getOrFetchURL(cfg.cache, url)
+	cache, ok := cfg.cache.(*pokecache.Cache)
+	if !ok {
+		return fmt.Errorf("cache is not of type *pokecache.Cache")
+	}
+	body, err := getOrFetchURL(cache, url)
 	if err != nil {
 		return fmt.Errorf("failed to fetch location areas: %w", err)
 	}
