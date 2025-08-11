@@ -10,14 +10,6 @@ type fakeCache struct {
 	store map[string][]byte
 }
 
-func (f *fakeCache) Get(key string) ([]byte, bool) {
-	v, ok := f.store[key]
-	return v, ok
-}
-func (f *fakeCache) Add(key string, val []byte) {
-	f.store[key] = val
-}
-
 func TestCommandExplore(t *testing.T) {
 	pokemonJSON := `{"pokemon_encounters": [
 		{"pokemon": {"name": "pikachu"}},

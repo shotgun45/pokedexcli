@@ -4,6 +4,7 @@ type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
 	cache            CacheInterface
+	pokedex          map[string]Pokemon
 }
 
 type cliCommand struct {
@@ -14,6 +15,16 @@ type cliCommand struct {
 
 func getCommands() map[string]cliCommand {
 	return map[string]cliCommand{
+		"catch": {
+			name:        "catch",
+			description: "Try to catch a Pokemon by name",
+			callback:    commandCatch,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Explore a location area and list the Pokemon found there",
+			callback:    commandExplore,
+		},
 		"help": {
 			name:        "help",
 			description: "Displays a help message",
@@ -33,11 +44,6 @@ func getCommands() map[string]cliCommand {
 			name:        "mapb",
 			description: "Displays the previous 20 location areas in the Pokemon world",
 			callback:    commandMapb,
-		},
-		"explore": {
-			name:        "explore",
-			description: "Explore a location area and list the Pokemon found there",
-			callback:    commandExplore,
 		},
 	}
 }

@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 )
 
 // CacheInterface allows mocking for tests
@@ -56,6 +58,18 @@ func getOrFetchURLExplore(cache CacheInterface, url string) ([]byte, error) {
 	if data, ok := cache.Get(url); ok {
 		return data, nil
 	}
-	// This function is only used in tests, so we don't fetch from the network here
-	return nil, fmt.Errorf("not found in cache: %s", url)
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("API returned status: %s", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	cache.Add(url, body)
+	return body, nil
 }
